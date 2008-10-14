@@ -1,0 +1,11 @@
+author: 
+    name:     mike demers
+    homepage: http://9astronauts.com/
+summary:  wraps rails logger and provides assertions that test for presence
+          or absence of log messages generated during test cases.
+homepage: http://github.com/mikedemers/testable-logger/tree
+plugin:   http://github.com/mikedemers/testable-logger/tree
+license:  MIT
+version:  1.0
+revision: '($Id: about.yml 6 2006-07-03 21:23:58Z mike $)'
+

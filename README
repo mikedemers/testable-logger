@@ -1,0 +1,133 @@
+OVERVIEW
+========
+
+Testable Logger acts as a buffered proxy in front of the normal Logger object
+when running in a test environment.  It will store the messages that are logged
+during a test run and make them available for testing through the assertions
+`assert_logged` and `assert_nothing_logged`.
+
+
+LOGGING ASSERTIONS
+==================
+
+assert_logged
+-------------
+
+`assert_logged [level [, match]] [&block]`
+
+Verifies that a message was logged at the given `level`
+(:debug, :info, :warn, :error, :fatal or :any [default])
+since the last `flush`.  `match` can be a String or a Regexp and if
+provided it will be compared against each message logged at the
+given level, returning true if it matches and false otherwise.
+If a block is given, `match` will be ignored and the block will be
+called with an array of message strings as it's only parameter.  The
+block should return true for a match and false otherwise.
+All parameters are optional: if called with no parameters, it will
+pass if anything was logged at any level.
+
+
+assert\_nothing_logged
+----------------------
+
+`assert_nothing_logged [level [, match]] [&block]`
+
+Verifies that a message was not logged at the given `level`.
+With no `match` parameter, verifies that nothing was logged at the given
+log level.  If `match` is given, verifies that nothing was logged at the
+given level that matches the Regexp (if `match` is a Regexp) or is equal to
+the String (if `match` is a String).
+If a block is given, `match` will be ignored and the block will be called
+with an array of message strings as it's only parameter.  The block should
+return true for a match and false otherwise.
+All parameters are optional: if called with no parameters, it will
+only pass if nothing was logged at any level.
+
+
+USING TESTABLE_LOGGER
+=====================
+
+The testable logger will automatically insert itself into your app's logging
+mechanism when it is run in the "test" environment.  It will have no effect
+on the "development" and "production" environments.  Unless overridden,
+testable logger will automatically clear its buffers before each test case.
+
+Here are some ridiculously contrived examples of testable logger's usage:
+
+    class UserTest < Test::Unit::TestCase
+	  fixtures  :users
+	
+	  def test_should_log_error_message
+	    # try to find a non-existent user
+		u = User.find_by_nickname('Bremelo')
+		assert u.nil?
+		# make sure an error was logged
+		assert_logged :error
+	  end
+	
+	  def test_should_refuse_access_to_sensitive_data
+	    # try to look up restricted information
+	    a = Address.find_by_last_name_and_manager_id('Alba', users(:crazy_stalker).id)
+		assert a.nil?
+		# make sure a "Security Violation" error was logged
+		assert_logged :error, /Security Violation/
+	  end
+	
+	  def test_should_create_new_user
+	    u = User.create(:first_name => 'Bonita', :last_name => 'Applebaum')
+	    assert u.gotta_put_me_on
+		# make sure no errors were logged
+	    assert_nothing_logged :error
+	  end
+	
+	  def test_should_log_more_than_one_warning
+	    u = users(:jessep)
+	    u.testify
+	    assert u.guilty?
+	    assert_logged :warn do |messages|
+	      count = 0
+	      messages_each do |m|
+	        case m
+	        when /can't handle the truth/ ; count += 1
+	        when /need me on that wall/   ; count += 1
+	        when /job you sent me to do/  ; count += 1
+	        end
+	      end
+	      count > 1
+	    end
+	  end
+	end
+
+	
+OPTIONS
+======
+
+Testable Logger hooks into the the setup method of a Test Case and automatically invokes
+its `flush` method to clear its internal buffers before each test case.  This feature can
+be disabled by setting the instance variable `use_manual_flushing` to `true`.  If you
+enable this feature, you will need to call `flush` manually or else the buffers will
+retain the logged messages from all previous test cases.
+
+
+INSTALLATION
+============
+
+TestableLogger is a standard Ruby on Rails plugin.  For information about how to install
+plugins, type "ruby script/plugin --help" from within a rails project.
+
+
+KNOWN ISSUES
+============
+
+Testable Logger assumes that all Rails objects that use the logger are using the same
+Logger object.  If you have a crazy advanced logger setup in your app, this might
+cause problems for you.
+
+
+BUGS, FEEDBACK & PATCHES
+========================
+
+Please send any bugs, feedback or (preferably) patches to <code@teytek.com>.
+You can always find the latest information about this plug-in
+at <http://github.com/mikedemers/testable-logger/tree>.
+
